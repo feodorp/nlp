@@ -65,3 +65,35 @@ def modified_cholesky(A):
     L = np.linalg.cholesky( Amod)
 
     return L
+
+def modified_ldlt(A, delta=None):
+    """Perform the modified Cholesky decomposition of a symmetric matrix A."""
+
+    if A.shape[0] != A.shape[1]:
+        raise ValueError("Matrix A must be square")
+    if not np.allclose(A, A.T):
+        raise ValueError("Input matrix must be symmetric.")
+
+    n = A.shape[0]
+    if delta is None:
+        delta = np.sqrt(np.finfo(np.float64).eps) * np.linalg.norm(A, 'fro')
+
+    L, D, P = ldl(A, lower=True)
+
+    DMC = np.eye(n)
+
+    k = 0
+    while k < n:
+        if k == n - 1 or D[k, k + 1] == 0:
+            DMC[k,k] = max(D[k, k], delta)
+            k += 1
+        else:
+            E = D[k:k + 2, k:k + 2]
+            eigvals, eigvecs = np.linalg.eigh(E)
+            eigvals = np.maximum(eigvals, delta)
+            temp = eigvecs @ np.diag(eigvals) @ eigvecs.T
+            DMC[k:k + 2, k:k + 2] = (temp + temp.T) / 2
+            k += 2
+
+
+    return L, DMC, P, D
