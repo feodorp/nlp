@@ -1,5 +1,6 @@
-from chol import modified_cholesky
+from chol import modified_cholesky, modified_ldlt
 import numpy as np
+import scipy
 
 def backtracking(x_k, p_k, f, grad_f, c=1e-2, rho=0.5):
     """
@@ -67,10 +68,15 @@ def line_search_backtracking(x0, f, grad_f, method='steepest', hess_f=None, retu
                 raise ValueError("Hessian function required for 'hessian' method")
             H_k = hess_f(x_k)
             # Use modified Cholesky to ensure positive definiteness
-            L = modified_cholesky(H_k)
-            # Solve for direction: L L^T p_k = -grad_k
-            y = np.linalg.solve(L, -grad_k)
-            p_k = np.linalg.solve(L.T, y)
+            # L = modified_cholesky(H_k)
+            # y = np.linalg.solve(L, -grad_k)
+            # p_k = np.linalg.solve(L.T, y)
+            L, D, p, D0 = modified_ldlt(H_k)
+            pb = -grad_k[p]
+            y = scipy.linalg.solve_triangular(L[p,], pb, lower=True, unit_diagonal=True)
+            z =  scipy.linalg.solve(D, y)
+            p_k = np.zeros_like(x_k)
+            p_k[p] = scipy.linalg.solve_triangular(L[p,:].T, z, lower=False, unit_diagonal=True)
 
         else:
             raise ValueError("Unknown method. Use 'steepest', 'bfgs', or 'hessian'.")
