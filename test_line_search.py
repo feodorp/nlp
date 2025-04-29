@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from optimization import line_search_backtracking
+from optimization import line_search_backtracking, line_search_zoom
 
 # Define the Rosenbrock function
 def rosenbrock(x):
@@ -39,14 +39,26 @@ def plot_path(path, method):
 # Initial point
 x0 = np.array([-0.5, 2.5])
 
-# Test with Steepest Descent
+# Test backtracking with Steepest Descent
 path_sd = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, method='steepest', hess_f=None, return_path=True)
-plot_path(path_sd, 'Steepest Descent')
+plot_path(path_sd, 'Backtracking Steepest Descent')
 
-# Test with BFGS
+# Test backtracking with BFGS
 path_bfgs = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, method='bfgs', hess_f=None, return_path=True)
-plot_path(path_bfgs, 'BFGS')
+plot_path(path_bfgs, 'Backtracking BFGS')
 
-# Test with Hessian
+# Test backtracking with Hessian
 path_hess = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, method='hessian', hess_f=hess_rosenbrock, return_path=True)
-plot_path(path_hess, 'Hessian')
+plot_path(path_hess, 'Backtracking Hessian')
+
+# Test zoom with Steepest Descent
+path_sd = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='steepest', hess_f=None, return_path=True)
+plot_path(path_sd, 'Zoom Steepest Descent')
+
+# Test zoom with BFGS
+path_bfgs = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='bfgs', hess_f=None, return_path=True)
+plot_path(path_bfgs, 'Zoom BFGS')
+
+# Test zoom with Hessian
+path_hess = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='hessian', hess_f=hess_rosenbrock, return_path=True)
+plot_path(path_hess, 'Zoom Hessian')
