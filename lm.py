@@ -87,7 +87,7 @@ def levenberg_marquardt(
     nmax: int = 500,          # iteration limit
     tol_abs: float = 1e-6,    # absolute gradient tolerance
     tol_rel: float = 1e-6,    # relative gradient tolerance
-    eps: float = 1e-6,        # safeguard tolerance
+    eps: float = 1e-4,        # safeguard tolerance
     Scaling: bool = True     # activate diagonal scaling
 ):
     """
@@ -116,8 +116,6 @@ def levenberg_marquardt(
         Iteration log  [k, ‖p‖, λ, ‖g‖, ρ].
     """
 
-    path = [x.copy()]
-
     # convenience lambdas
     f = lambda z: 0.5 * norm(r(z)) ** 2
     gradf = lambda z: J(z).T @ r(z)
@@ -142,8 +140,8 @@ def levenberg_marquardt(
     nu = max(nu0, 1.1)
 
     # information log
-    info = [['iter', '‖p‖', 'λ', '‖g‖', 'ρ']]
-    info.append([0, 'n/a', lam, gnorm0, 'n/a'])
+    info = [['iter', '‖p‖', 'λ', '‖g‖', 'ρ', 'x']]
+    info.append([0, 'n/a', lam, gnorm0, 'n/a', x.copy() if n <= 2 else None])
 
     # ------------------------------------------------------------------ loop
     for k in range(1, nmax + 1):
@@ -196,7 +194,6 @@ def levenberg_marquardt(
         # ---------------------------------------------------- λ update
         if rho > 0.0:                                # accept step
             x += p
-            path.append(x.copy())
             fx = fx_trial
             lam *= max(1.0 / 3.0, 1.0 - (2.0 * rho - 1.0) ** 3)
             nu = 2.0
@@ -206,9 +203,9 @@ def levenberg_marquardt(
 
         # gradient norm for stopping test & log
         gnorm = norm(gradf(x))
-        info.append([k, norm(p), lam, gnorm, rho])
+        info.append([k, norm(p), lam, gnorm, rho, x.copy() if n <= 2 else None])
 
         if gnorm <= tolerance:
             break
 
-    return x, info, path
+    return x, info
