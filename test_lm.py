@@ -28,25 +28,44 @@ def plot_path(path, method):
     plt.figure()
     plt.contour(X, Y, Z, levels=50, cmap='viridis')
     path = np.array(path)
-    plt.plot(path[:, 0], path[:, 1], 'ro-', label=f'Optimization path {len(path)} steps')
+    plt.plot(path[:, 0], path[:, 1], 'ro-', label=f'Optimization path ({len(path)} steps)')
     plt.title(f'Optimization Path for {method}')
     plt.xlabel('x')
     plt.ylabel('y')
     plt.legend()
     plt.savefig(f'optimization_path_{method.lower().replace(" ", "_")}.pdf')
 
-# -------------------------------------------------------------------------
-#  Initial point and solver call
-# -------------------------------------------------------------------------
-x0 = np.array([-0.75, 2.5])          # same start as in many references
+# Function to print iteration log
+def print_log(info, method):
+    print(f"\n=== Optimization Steps for {method} ===")
+    print("{:<6} {:<12} {:<12} {:<12} {:<12} {:<25}".format("Iter", "||p||", "lambda", "||g||", "rho", "Position (x)"))
+    print("-" * 67)
+    for row in info[1:]:
+        iter_num, p_norm, lam, g_norm, rho, x = row
+        # Format p_norm: string if 'n/a', scientific notation if float
+        p_norm_str = f"{p_norm:<12}" if isinstance(p_norm, str) else f"{p_norm:<12.4e}"
+        # Format alpha: string if 'n/a', scientific notation if float
+        lambda_str = f"{lam:<12}" if isinstance(lam, str) else f"{lam:<12.4e}"
+        # g_norm is always a float, so format in scientific notation
+        g_norm_str = f"{g_norm:<12.4e}"
+        # Format rho: string if 'n/a', scientific notation if float
+        rho_str = f"{rho:<12}" if isinstance(rho, str) else f"{rho:<12.4e}"
+        # Format position based on whether x is None or an array
+        if x is not None:
+            pos_str = f"[{x[0]:.4e}, {x[1]:.4e}]"
+            print(f"{iter_num:<6d} {p_norm_str} {lambda_str} {g_norm_str} {rho_str} {pos_str:<25}")
+        else:
+            print(f"{iter_num:<6d} {p_norm_str} {lambda_str} {g_norm_str} {rho_str} (n > 2)")
+    print("=" * 67)
 
-x_opt, log, path = levenberg_marquardt(residual, jacobian, x0,
+# Initial point
+x0 = np.array([-0.5, 1.5])
+
+x_opt, info = levenberg_marquardt(residual, jacobian, x0,
                                  lambda0=1e-3,  # start damping
                                  nu0=2.0,       # Nielsen factor
                                  Scaling=True)  # activate column-scaling
 
-print(len(path))
-plot_path(path,"LM")
-print("Optimised point :", x_opt)
-print("Rosenbrock value:", 100*(x_opt[1]-x_opt[0]**2)**2 + (1-x_opt[0])**2)
-print("Iterations run  :", len(log)-1)          # first row in log is header
+path_hess = [row[-1] for row in info[1:] if row[-1] is not None]
+print_log(info, "LM")
+plot_path(path_hess, "LM")
