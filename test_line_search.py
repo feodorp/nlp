@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from optimization import line_search_backtracking, line_search_zoom
+from linesearch import line_search_backtracking, line_search_zoom
 
 # Define the Rosenbrock function
 def rosenbrock(x):
@@ -29,36 +29,80 @@ def plot_path(path, method):
     plt.figure()
     plt.contour(X, Y, Z, levels=50, cmap='viridis')
     path = np.array(path)
-    plt.plot(path[:, 0], path[:, 1], 'ro-', label=f'Optimization path {path.size} steps')
+    plt.plot(path[:, 0], path[:, 1], 'ro-', label=f'Optimization path ({len(path)} steps)')
     plt.title(f'Optimization Path for {method}')
     plt.xlabel('x')
     plt.ylabel('y')
     plt.legend()
     plt.savefig(f'optimization_path_{method.lower().replace(" ", "_")}.pdf')
 
+# Function to print iteration log
+def print_log(info, method):
+    print(f"\n=== Optimization Steps for {method} ===")
+    print("{:<6} {:<12} {:<12} {:<12} {:<25}".format("Iter", "||p||", "alpha", "||g||", "Position (x)"))
+    print("-" * 67)
+    for row in info[1:]:
+        iter_num, p_norm, alpha, g_norm, x = row
+        # Format p_norm: string if 'n/a', scientific notation if float
+        p_norm_str = f"{p_norm:<12}" if isinstance(p_norm, str) else f"{p_norm:<12.4e}"
+        # Format alpha: string if 'n/a', scientific notation if float
+        alpha_str = f"{alpha:<12}" if isinstance(alpha, str) else f"{alpha:<12.4e}"
+        # g_norm is always a float, so format in scientific notation
+        g_norm_str = f"{g_norm:<12.4e}"
+        # Format position based on whether x is None or an array
+        if x is not None:
+            pos_str = f"[{x[0]:.4e}, {x[1]:.4e}]"
+            print(f"{iter_num:<6d} {p_norm_str} {alpha_str} {g_norm_str} {pos_str:<25}")
+        else:
+            print(f"{iter_num:<6d} {p_norm_str} {alpha_str} {g_norm_str} (n > 2)")
+    print("=" * 67)
+
 # Initial point
-x0 = np.array([-0.5, 2.5])
+x0 = np.array([-0.5, 1.5])
 
 # Test backtracking with Steepest Descent
-path_sd = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, method='steepest', hess_f=None, return_path=True)
-plot_path(path_sd, 'Backtracking Steepest Descent')
+x_opt, info = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, line_search_type='interp', method='steepest', hess_f=None)
+path_sd = [row[4] for row in info[1:] if row[4] is not None]
+print_log(info, "Backtracking Steepest Descent")
+plot_path(path_sd, "Backtracking Steepest Descent")
+
+# Test backtracking with SR1
+x_opt, info = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, line_search_type='interp', method='SR1', hess_f=None)
+path_bfgs = [row[4] for row in info[1:] if row[4] is not None]
+print_log(info, "Backtracking SR1")
+plot_path(path_bfgs, "Backtracking SR1")
 
 # Test backtracking with BFGS
-path_bfgs = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, method='bfgs', hess_f=None, return_path=True)
-plot_path(path_bfgs, 'Backtracking BFGS')
+x_opt, info = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, line_search_type='interp', method='BFGS', hess_f=None)
+path_bfgs = [row[4] for row in info[1:] if row[4] is not None]
+print_log(info, "Backtracking BFGS")
+plot_path(path_bfgs, "Backtracking BFGS")
 
 # Test backtracking with Hessian
-path_hess = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, method='hessian', hess_f=hess_rosenbrock, return_path=True)
-plot_path(path_hess, 'Backtracking Hessian')
+x_opt, info = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, line_search_type='interp', method='hessian', hess_f=hess_rosenbrock)
+path_hess = [row[4] for row in info[1:] if row[4] is not None]
+print_log(info, "Backtracking Hessian")
+plot_path(path_hess, "Backtracking Hessian")
 
 # Test zoom with Steepest Descent
-path_sd = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='steepest', hess_f=None, return_path=True)
-plot_path(path_sd, 'Zoom Steepest Descent')
+x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='steepest', hess_f=None)
+path_sd = [row[4] for row in info[1:] if row[4] is not None]
+print_log(info, "Zoom Steepest Descent")
+plot_path(path_sd, "Zoom Steepest Descent")
+
+# Test zoom with SR1
+x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='BFGS', hess_f=None)
+path_bfgs = [row[4] for row in info[1:] if row[4] is not None]
+print_log(info, "Zoom SR1")
+plot_path(path_bfgs, "Zoom SR1")
 
 # Test zoom with BFGS
-path_bfgs = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='bfgs', hess_f=None, return_path=True)
-plot_path(path_bfgs, 'Zoom BFGS')
+x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='BFGS', hess_f=None)
+path_bfgs = [row[4] for row in info[1:] if row[4] is not None]
+print_log(info, "Zoom BFGS")
+plot_path(path_bfgs, "Zoom BFGS")
 
 # Test zoom with Hessian
-path_hess = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='hessian', hess_f=hess_rosenbrock, return_path=True)
-plot_path(path_hess, 'Zoom Hessian')
+x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='hessian', hess_f=hess_rosenbrock)
+path_hess = [row[4] for row in info[1:] if row[4] is not None]
+print_log(info, "Zoom Hessian")
