@@ -123,7 +123,7 @@ def levenberg_marquardt(
     # initial function/gradient
     fx = f(x)
     g0 = gradf(x)
-    gnorm0 = norm(g0)
+    gnorm0 = norm(g0,np.inf)
 
     # stopping tolerance
     tolerance = min(tol_rel * gnorm0 + tol_abs, eps)
@@ -202,8 +202,8 @@ def levenberg_marquardt(
             nu *= 2.0
 
         # gradient norm for stopping test & log
-        gnorm = norm(gradf(x))
-        info.append([k, norm(p), lam, gnorm, rho, x.copy() if n <= 2 else None])
+        gnorm = norm(gradf(x),np.inf)
+        info.append([k, norm(p,np.inf), lam, gnorm, rho, x.copy() if n <= 2 else None])
 
         if gnorm <= tolerance:
             break
