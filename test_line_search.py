@@ -19,25 +19,75 @@ def hess_rosenbrock(x):
     d2fdy2 = 200
     return np.array([[d2fdx2, d2fdxdy], [d2fdxdy, d2fdy2]])
 
+
+# Function 2: F(x,y) = (1 - x^4)^2 + 100 (y - x^2)^2 + 100 (sin(y^2) - x)^2
+def func2(x):
+    return (1 - x[0]**4)**2 + 100 * (x[1] - x[0]**2)**2 + 100 * (np.sin(x[1]**2) - x[0])**2
+
+def grad_func2(x):
+    dfdx = -4 * x[0]**3 * 2 * (1 - x[0]**4) - 400 * x[0] * (x[1] - x[0]**2) - 200 * (np.sin(x[1]**2) - x[0])
+    dfdy = 200 * (x[1] - x[0]**2) + 400 * x[1] * np.cos(x[1]**2) * (np.sin(x[1]**2) - x[0])
+    return np.array([dfdx, dfdy])
+
+def hess_func2(x):
+    d2fdx2 = 56 * x[0]**6 + 1176 * x[0]**2 - 400 * x[1] + 200
+    d2fdxdy = -400 * x[0] - 400 * x[1] * np.cos(x[1]**2)
+    d2fdy2 = 200 + 400 * ( (np.cos(x[1]**2) - 2 * x[1]**2 * np.sin(x[1]**2)) * (np.sin(x[1]**2) - x[0]) + 2 * x[1]**2 * np.cos(x[1]**2)**2 )
+    return np.array([[d2fdx2, d2fdxdy], [d2fdxdy, d2fdy2]])
+
+# Function 3: F(x,y) = (2y^2 - x)^2 + 100 (y^2 - x^2)^2
+def func3(x):
+    return (2 * x[1]**2 - x[0])**2 + 100 * (x[1]**2 - x[0]**2)**2
+
+def grad_func3(x):
+    dfdx = -2 * (2 * x[1]**2 - x[0]) - 400 * x[0] * (x[1]**2 - x[0]**2)
+    dfdy = 8 * x[1] * (2 * x[1]**2 - x[0]) + 400 * x[1] * (x[1]**2 - x[0]**2)
+    return np.array([dfdx, dfdy])
+
+def hess_func3(x):
+    d2fdx2 = 2 + 1200 * x[0]**2 - 400 * x[1]**2
+    d2fdxdy = -8 * x[1] * (1 + 100 * x[0])
+    d2fdy2 = 1248 * x[1]**2 - 400 * x[0]**2 - 8 * x[0]
+    return np.array([[d2fdx2, d2fdxdy], [d2fdxdy, d2fdy2]])
+
+# Function 4: F(x,y) = (1 - sin(x))^2 + 100 (cos(y) - x^2)^2
+def func4(x):
+    return (1 - np.sin(x[0]))**2 + 100 * (np.cos(x[1]) - x[0]**2)**2
+
+def grad_func4(x):
+    dfdx = -2 * np.cos(x[0]) * (1 - np.sin(x[0])) - 400 * x[0] * (np.cos(x[1]) - x[0]**2)
+    dfdy = -200 * np.sin(x[1]) * (np.cos(x[1]) - x[0]**2)
+    return np.array([dfdx, dfdy])
+
+def hess_func4(x):
+    d2fdx2 = 2 * np.cos(x[0])**2 + 2 * np.sin(x[0]) * (1 - np.sin(x[0])) + 800 * x[0]**2 - 400 * (np.cos(x[1]) - x[0]**2)
+    d2fdxdy = 400 * x[0] * np.sin(x[1])
+    d2fdy2 = -200 * np.cos(x[1]) * (np.cos(x[1]) - x[0]**2) - 200 * np.sin(x[1])**2
+    return np.array([[d2fdx2, d2fdxdy], [d2fdxdy, d2fdy2]])
+
 # Function to plot the optimization path
-def plot_path(path, method):
-    x = np.linspace(-2, 2, 400)
-    y = np.linspace(-1, 3, 400)
+def plot_path(path, method, func_name, x_range, y_range):
+    x = np.linspace(x_range[0], x_range[1], 400)
+    y = np.linspace(y_range[0], y_range[1], 400)
     X, Y = np.meshgrid(x, y)
-    Z = 100 * (Y - X**2)**2 + (1 - X)**2
+    Z = np.zeros_like(X)
+    for i in range(X.shape[0]):
+        for j in range(X.shape[1]):
+            Z[i, j] = globals()[func_name](np.array([X[i, j], Y[i, j]]))
 
     plt.figure()
     plt.contour(X, Y, Z, levels=50, cmap='viridis')
     path = np.array(path)
     plt.plot(path[:, 0], path[:, 1], 'ro-', label=f'Optimization path ({len(path)} steps)')
-    plt.title(f'Optimization Path for {method}')
+    plt.title(f'Optimization Path for {method} on {func_name}')
     plt.xlabel('x')
     plt.ylabel('y')
     plt.legend()
-    plt.savefig(f'optimization_path_{method.lower().replace(" ", "_")}.pdf')
+    plt.savefig(f'optimization_path_{method.lower().replace(" ", "_")}_{func_name}.pdf')
+    plt.close()
 
 # Function to print iteration log
-def print_log(info, method):
+def print_log(info, method, func_name):
     def print_row(row):
         iter_num, p_norm, alpha, g_norm, x = row
         # Format p_norm: string if 'n/a', scientific notation if float
@@ -54,7 +104,7 @@ def print_log(info, method):
             print(f"{iter_num:<6d} {p_norm_str} {alpha_str} {g_norm_str} (n > 2)")
 
 
-    print(f"\n=== Optimization Steps for {method} ===")
+    print(f"\n=== Optimization Steps for {method} on {func_name} ===")
     print("{:<6} {:<12} {:<12} {:<12} {:<25}".format("Iter", "||p||", "alpha", "||g||", "Position (x)"))
     print("-" * 67)
     nsteps = len(info[1:])
@@ -70,54 +120,34 @@ def print_log(info, method):
             print_row(row)
         print("=" * 67)
 
+# Test all functions with both line search methods
+functions = [
+    ('rosenbrock', rosenbrock, grad_rosenbrock, hess_rosenbrock, (-2, 2), (-4, 4)),
+    ('func2', func2, grad_func2, hess_func2, (-2, 2), (-4, 4)),
+    ('func3', func3, grad_func3, hess_func3, (-2, 2), (-4, 4)),
+    ('func4', func4, grad_func4, hess_func4, (-2, 2), (-4, 4))
+]
+
+methods = [
+    ('Backtracking Steepest Descent', 'steepest', None),
+    ('Backtracking SR1', 'SR1', None),
+    ('Backtracking BFGS', 'BFGS', None),
+    ('Zoom Steepest Descent', 'steepest', None),
+    ('Zoom SR1', 'SR1', None),
+    ('Zoom BFGS', 'BFGS', None),
+]
 
 # Initial point
-x0 = np.array([-0.5, 1.5])
+x0 = np.array([-0.5, -3.0])
 
-# Test backtracking with Steepest Descent
-x_opt, info = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, line_search_type='interp', method='steepest', hess_f=None)
-path_sd = [row[4] for row in info[1:] if row[4] is not None]
-print_log(info, "Backtracking Steepest Descent")
-plot_path(path_sd, "Backtracking Steepest Descent")
 
-# Test backtracking with SR1
-x_opt, info = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, line_search_type='interp', method='SR1', hess_f=None)
-path_bfgs = [row[4] for row in info[1:] if row[4] is not None]
-print_log(info, "Backtracking SR1")
-plot_path(path_bfgs, "Backtracking SR1")
-
-# Test backtracking with BFGS
-x_opt, info = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, line_search_type='interp', method='BFGS', hess_f=None)
-path_bfgs = [row[4] for row in info[1:] if row[4] is not None]
-print_log(info, "Backtracking BFGS")
-plot_path(path_bfgs, "Backtracking BFGS")
-
-# Test backtracking with Hessian
-x_opt, info = line_search_backtracking(x0, rosenbrock, grad_rosenbrock, line_search_type='interp', method='hessian', hess_f=hess_rosenbrock)
-path_hess = [row[4] for row in info[1:] if row[4] is not None]
-print_log(info, "Backtracking Hessian")
-plot_path(path_hess, "Backtracking Hessian")
-
-# Test zoom with Steepest Descent
-x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='steepest', hess_f=None)
-path_sd = [row[4] for row in info[1:] if row[4] is not None]
-print_log(info, "Zoom Steepest Descent")
-plot_path(path_sd, "Zoom Steepest Descent")
-
-# Test zoom with SR1
-x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='BFGS', hess_f=None)
-path_bfgs = [row[4] for row in info[1:] if row[4] is not None]
-print_log(info, "Zoom SR1")
-plot_path(path_bfgs, "Zoom SR1")
-
-# Test zoom with BFGS
-x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='BFGS', hess_f=None)
-path_bfgs = [row[4] for row in info[1:] if row[4] is not None]
-print_log(info, "Zoom BFGS")
-plot_path(path_bfgs, "Zoom BFGS")
-
-# Test zoom with Hessian
-x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='hessian', hess_f=hess_rosenbrock)
-path_hess = [row[4] for row in info[1:] if row[4] is not None]
-print_log(info, "Zoom Hessian")
-plot_path(path_hess, "Zoom Hessian")
+for func_name, f, grad_f, hess_f, x_range, y_range in functions:
+    for method_name, method, hess_provider in methods:
+        hess = hess_provider(functions[functions.index((func_name, f, grad_f, hess_f, x_range, y_range))]) if hess_provider else None
+        if method_name.startswith('Backtracking'):
+            x_opt, info = line_search_backtracking(x0, f, grad_f, line_search_type='interp', method=method, hess_f=hess)
+        else:
+            x_opt, info = line_search_zoom(x0, f, grad_f, method=method, hess_f=hess)
+        path = [row[4] for row in info[1:] if row[4] is not None]
+        print_log(info, method_name, func_name)
+        plot_path(path, method_name, func_name, x_range, y_range)
