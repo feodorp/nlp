@@ -37,26 +37,37 @@ def plot_path(path, method):
 
 # Function to print iteration log
 def print_log(info, method):
-    print(f"\n=== Optimization Steps for {method} ===")
-    print("{:<6} {:<12} {:<12} {:<12} {:<12} {:<25}".format("Iter", "||p||", "lambda", "||g||", "rho", "Position (x)"))
-    print("-" * 67)
-    for row in info[1:]:
-        iter_num, p_norm, lam, g_norm, rho, x = row
+    def print_row(row):
+        iter_num, p_norm, alpha, g_norm, x = row
         # Format p_norm: string if 'n/a', scientific notation if float
         p_norm_str = f"{p_norm:<12}" if isinstance(p_norm, str) else f"{p_norm:<12.4e}"
         # Format alpha: string if 'n/a', scientific notation if float
-        lambda_str = f"{lam:<12}" if isinstance(lam, str) else f"{lam:<12.4e}"
+        alpha_str = f"{alpha:<12}" if isinstance(alpha, str) else f"{alpha:<12.4e}"
         # g_norm is always a float, so format in scientific notation
         g_norm_str = f"{g_norm:<12.4e}"
-        # Format rho: string if 'n/a', scientific notation if float
-        rho_str = f"{rho:<12}" if isinstance(rho, str) else f"{rho:<12.4e}"
         # Format position based on whether x is None or an array
         if x is not None:
             pos_str = f"[{x[0]:.4e}, {x[1]:.4e}]"
-            print(f"{iter_num:<6d} {p_norm_str} {lambda_str} {g_norm_str} {rho_str} {pos_str:<25}")
+            print(f"{iter_num:<6d} {p_norm_str} {alpha_str} {g_norm_str} {pos_str:<25}")
         else:
-            print(f"{iter_num:<6d} {p_norm_str} {lambda_str} {g_norm_str} {rho_str} (n > 2)")
-    print("=" * 67)
+            print(f"{iter_num:<6d} {p_norm_str} {alpha_str} {g_norm_str} (n > 2)")
+
+
+    print(f"\n=== Optimization Steps for {method} ===")
+    print("{:<6} {:<12} {:<12} {:<12} {:<25}".format("Iter", "||p||", "alpha", "||g||", "Position (x)"))
+    print("-" * 67)
+    nsteps = len(info[1:])
+    if nsteps < 50:
+        for row in info[1:]:
+            print_row(row)
+        print("=" * 67)
+    else:
+        for row in info[1:5]:
+            print_row(row)
+        print("." * 20)
+        for row in info[-20:]:
+            print_row(row)
+        print("=" * 67)
 
 # Initial point
 x0 = np.array([-0.5, 1.5])
