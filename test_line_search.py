@@ -38,10 +38,7 @@ def plot_path(path, method):
 
 # Function to print iteration log
 def print_log(info, method):
-    print(f"\n=== Optimization Steps for {method} ===")
-    print("{:<6} {:<12} {:<12} {:<12} {:<25}".format("Iter", "||p||", "alpha", "||g||", "Position (x)"))
-    print("-" * 67)
-    for row in info[1:]:
+    def print_row(row):
         iter_num, p_norm, alpha, g_norm, x = row
         # Format p_norm: string if 'n/a', scientific notation if float
         p_norm_str = f"{p_norm:<12}" if isinstance(p_norm, str) else f"{p_norm:<12.4e}"
@@ -55,7 +52,24 @@ def print_log(info, method):
             print(f"{iter_num:<6d} {p_norm_str} {alpha_str} {g_norm_str} {pos_str:<25}")
         else:
             print(f"{iter_num:<6d} {p_norm_str} {alpha_str} {g_norm_str} (n > 2)")
-    print("=" * 67)
+
+
+    print(f"\n=== Optimization Steps for {method} ===")
+    print("{:<6} {:<12} {:<12} {:<12} {:<25}".format("Iter", "||p||", "alpha", "||g||", "Position (x)"))
+    print("-" * 67)
+    nsteps = len(info[1:])
+    if nsteps < 50:
+        for row in info[1:]:
+            print_row(row)
+        print("=" * 67)
+    else:
+        for row in info[1:5]:
+            print_row(row)
+        print("." * 20)
+        for row in info[-20:]:
+            print_row(row)
+        print("=" * 67)
+
 
 # Initial point
 x0 = np.array([-0.5, 1.5])
@@ -106,3 +120,4 @@ plot_path(path_bfgs, "Zoom BFGS")
 x_opt, info = line_search_zoom(x0, rosenbrock, grad_rosenbrock, method='hessian', hess_f=hess_rosenbrock)
 path_hess = [row[4] for row in info[1:] if row[4] is not None]
 print_log(info, "Zoom Hessian")
+plot_path(path_hess, "Zoom Hessian")
